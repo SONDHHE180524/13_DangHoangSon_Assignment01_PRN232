@@ -1,0 +1,180 @@
+@model List<_13_DangHoangSon_Assignment01_FontEnd.Models.NewsArticleViewModel>
+@{
+    ViewData["Title"] = "Tin tức & Sự kiện";
+    var categories = ViewBag.Categories as List<_13_DangHoangSon_Assignment01_FontEnd.Models.CategoryViewModel> ?? new();
+    string currentSearch = ViewBag.CurrentSearch as string ?? "";
+    short? currentCategory = ViewBag.CurrentCategory as short?;
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col-md-7">
+        <h2 class="fw-bold text-dark mb-1">
+            <i class="bi bi-newspaper text-primary me-2"></i>Tin tức & Sự kiện FU
+        </h2>
+        <p class="text-muted mb-0">Hệ thống thông tin và bài viết chính thức từ trường đại học</p>
+    </div>
+    <div class="col-md-5 mt-3 mt-md-0">
+        <!-- Form Tìm kiếm & Lọc danh mục -->
+        <form method="get" asp-controller="Home" asp-action="Index" class="d-flex gap-2">
+            <select name="categoryId" class="form-select form-select-sm" style="max-width: 170px;" onchange="this.form.submit()">
+                <option value="">-- Tất cả danh mục --</option>
+                @foreach (var c in categories)
+                {
+                    <option value="@c.CategoryId" selected="@(currentCategory == c.CategoryId)">@c.CategoryName</option>
+                }
+            </select>
+            <div class="input-group input-group-sm">
+                <input type="text" name="search" class="form-control" placeholder="Tìm theo tiêu đề..." value="@currentSearch" />
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+                @if (!string.IsNullOrEmpty(currentSearch) || currentCategory.HasValue)
+                {
+                    <a asp-action="Index" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
+                        <i class="bi bi-x-circle"></i>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card p-5 text-center bg-white shadow-sm border-0 my-4">
+        <i class="bi bi-inbox text-muted fs-1 mb-3"></i>
+        <h5 class="text-muted">Không có bài viết nào phù hợp với bộ lọc</h5>
+        <p class="small text-muted">Vui lòng thử lại với từ khóa hoặc danh mục khác.</p>
+        <div>
+            <a asp-action="Index" class="btn btn-sm btn-outline-primary">Xem tất cả bài viết</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var item in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 d-flex flex-column hover-shadow transition">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                <i class="bi bi-tag me-1"></i>@(item.Category?.CategoryName ?? "Chung")
+                            </span>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar3 me-1"></i>@(item.CreatedDate?.ToString("dd/MM/yyyy") ?? "N/A")
+                            </small>
+                        </div>
+
+                        <h5 class="card-title fw-bold text-dark mt-2 mb-2 line-clamp-2">
+                            @(item.NewsTitle ?? item.Headline)
+                        </h5>
+
+                        <p class="card-text text-muted small flex-grow-1 line-clamp-3">
+                            @item.Headline
+                        </p>
+
+                        @if (item.Tags.Any())
+                        {
+                            <div class="mb-3">
+                                @foreach (var tag in item.Tags)
+                                {
+                                    <span class="badge bg-light text-secondary border me-1 mb-1 small">
+                                        #@tag.TagName
+                                    </span>
+                                }
+                            </div>
+                        }
+
+                        <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-person me-1"></i>@(item.CreatedBy?.AccountName ?? "Tác giả")
+                            </small>
+                            <button class="btn btn-sm btn-outline-primary" onclick="readArticle('@item.NewsArticleId')">
+                                <i class="bi bi-eye me-1"></i> Xem chi tiết
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Popup Dialog: Đọc chi tiết bài viết (Modal) -->
+<div class="modal fade" id="readArticleModal" tabindex="-1" aria-labelledby="readArticleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header border-bottom">
+                <div>
+                    <span id="modalCategoryBadge" class="badge bg-primary me-2"></span>
+                    <small id="modalDate" class="text-muted"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <h3 id="modalTitle" class="fw-bold mb-3 text-dark"></h3>
+                <h6 id="modalHeadline" class="fst-italic text-secondary mb-4 border-start border-4 border-primary ps-3 py-1"></h6>
+                
+                <div id="modalContent" class="text-dark lh-lg" style="white-space: pre-line;"></div>
+                
+                <hr class="my-4" />
+                
+                <div class="row small text-muted">
+                    <div class="col-sm-6">
+                        <strong><i class="bi bi-person me-1"></i>Người đăng:</strong> <span id="modalAuthor"></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <strong><i class="bi bi-globe me-1"></i>Nguồn tin:</strong> <span id="modalSource"></span>
+                    </div>
+                </div>
+                <div class="mt-3" id="modalTagsContainer">
+                    <strong><i class="bi bi-tags me-1"></i>Thẻ:</strong>
+                    <span id="modalTags"></span>
+                </div>
+            </div>
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function readArticle(articleId) {
+            fetch(`/Home/GetArticleDetails?id=${articleId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error("Không thể tải bài viết");
+                    return res.json();
+                })
+                .then(data => {
+                    $('#modalCategoryBadge').text(data.category ? data.category.categoryName : 'Chung');
+                    const d = data.createdDate ? new Date(data.createdDate).toLocaleDateString('vi-VN') : 'N/A';
+                    $('#modalDate').html(`<i class="bi bi-calendar3 me-1"></i>${d}`);
+                    $('#modalTitle').text(data.newsTitle || data.headline);
+                    $('#modalHeadline').text(data.headline);
+                    $('#modalContent').text(data.newsContent || 'Chưa có nội dung.');
+                    $('#modalAuthor').text(data.createdBy ? data.createdBy.accountName : 'Tác giả');
+                    $('#modalSource').text(data.newsSource || 'N/A');
+
+                    $('#modalTags').empty();
+                    if (data.tags && data.tags.length > 0) {
+                        data.tags.forEach(t => {
+                            $('#modalTags').append(`<span class="badge bg-secondary me-1">#${t.tagName}</span>`);
+                        });
+                        $('#modalTagsContainer').show();
+                    } else {
+                        $('#modalTagsContainer').hide();
+                    }
+
+                    const modal = new bootstrap.Modal(document.getElementById('readArticleModal'));
+                    modal.show();
+                })
+                .catch(err => {
+                    alert("Có lỗi khi tải bài viết: " + err);
+                });
+        }
+    </script>
+}

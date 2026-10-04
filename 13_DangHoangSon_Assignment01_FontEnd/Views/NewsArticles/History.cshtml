@@ -1,0 +1,139 @@
+@model List<_13_DangHoangSon_Assignment01_FontEnd.Models.NewsArticleViewModel>
+@{
+    ViewData["Title"] = "Lịch sử viết bài của tôi";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-clock-history text-primary me-2"></i>Lịch sử viết bài của tôi</h3>
+        <p class="text-muted small mb-0">Danh sách các bài viết tin tức do chính bạn khởi tạo trong hệ thống</p>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại Quản lý tin tức
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 100px;">Mã</th>
+                        <th>Tiêu đề & Tóm tắt</th>
+                        <th>Danh mục</th>
+                        <th>Trạng thái</th>
+                        <th>Thẻ (Tags)</th>
+                        <th>Ngày tạo</th>
+                        <th class="text-center" style="width: 120px;">Xem nhanh</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-folder-x fs-1 d-block mb-2"></i>
+                                Bạn chưa tạo bài viết tin tức nào trên hệ thống.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="fw-semibold text-secondary">@item.NewsArticleId</td>
+                                <td>
+                                    <div class="fw-bold text-dark">@(item.NewsTitle ?? item.Headline)</div>
+                                    <small class="text-muted text-truncate d-inline-block" style="max-width: 320px;">@item.Headline</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info bg-opacity-10 text-dark">
+                                        @(item.Category?.CategoryName ?? "N/A")
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (item.NewsStatus == true)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.Tags.Any())
+                                    {
+                                        @foreach (var t in item.Tags)
+                                        {
+                                            <span class="badge bg-light text-dark border me-1">#@t.TagName</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Không có</span>
+                                    }
+                                </td>
+                                <td class="small text-muted">
+                                    @(item.CreatedDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewHistoryArticle('@item.NewsArticleId')">
+                                        <i class="bi bi-eye me-1"></i> Xem
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xem chi tiết bài viết lịch sử -->
+<div class="modal fade" id="historyArticleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" id="histTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="fst-italic text-secondary" id="histHeadline"></p>
+                <div class="mb-3 text-dark lh-lg" style="white-space: pre-line;" id="histContent"></div>
+                <hr />
+                <div class="row small text-muted">
+                    <div class="col-sm-6"><strong>Nguồn:</strong> <span id="histSource"></span></div>
+                    <div class="col-sm-6"><strong>Ngày tạo:</strong> <span id="histDate"></span></div>
+                </div>
+            </div>
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function viewHistoryArticle(articleId) {
+            fetch(`/Home/GetArticleDetails?id=${articleId}`)
+                .then(res => res.json())
+                .then(data => {
+                    $('#histTitle').text(data.newsTitle || data.headline);
+                    $('#histHeadline').text(data.headline);
+                    $('#histContent').text(data.newsContent || 'Không có nội dung.');
+                    $('#histSource').text(data.newsSource || 'N/A');
+                    $('#histDate').text(data.createdDate ? new Date(data.createdDate).toLocaleString('vi-VN') : 'N/A');
+
+                    const modal = new bootstrap.Modal(document.getElementById('historyArticleModal'));
+                    modal.show();
+                });
+        }
+    </script>
+}

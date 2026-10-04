@@ -1,0 +1,263 @@
+@model List<_13_DangHoangSon_Assignment01_FontEnd.Models.CategoryViewModel>
+@{
+    ViewData["Title"] = "Quản lý Danh mục";
+    string currentSearch = ViewBag.CurrentSearch as string ?? "";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-folder2-open text-primary me-2"></i>Quản lý Danh mục</h3>
+        <p class="text-muted small mb-0">Thêm, sửa, xóa, tìm kiếm danh mục tin tức (Dành cho Staff)</p>
+    </div>
+    <div>
+        <!-- Nút mở popup dialog tạo danh mục mới -->
+        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+            <i class="bi bi-plus-circle me-1"></i> Tạo danh mục mới
+        </button>
+    </div>
+</div>
+
+<!-- Thanh tìm kiếm -->
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row g-2 align-items-center">
+            <div class="col-md-9">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Tìm theo tên danh mục, mô tả..." value="@currentSearch" />
+                </div>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">
+                    <i class="bi bi-funnel me-1"></i> Tìm kiếm
+                </button>
+                @if (!string.IsNullOrEmpty(currentSearch))
+                {
+                    <a asp-action="Index" class="btn btn-outline-secondary" title="Đặt lại">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bảng danh sách danh mục -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th>Tên danh mục</th>
+                        <th>Mô tả</th>
+                        <th>Danh mục cha</th>
+                        <th>Trạng thái</th>
+                        <th class="text-center" style="width: 150px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-3 d-block mb-1"></i> Không tìm thấy danh mục nào
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="fw-semibold text-secondary">@item.CategoryId</td>
+                                <td class="fw-bold text-dark">@item.CategoryName</td>
+                                <td class="text-muted small">@item.CategoryDesciption</td>
+                                <td>
+                                    @if (item.ParentCategory != null)
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-10 text-dark">
+                                            @item.ParentCategory.CategoryName
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Gốc (None)</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.IsActive == true)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <!-- Nút Sửa: mở popup dialog -->
+                                    <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditCategoryModal(@item.CategoryId)" title="Chỉnh sửa">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <!-- Nút Xóa: mở popup xác nhận -->
+                                    <button class="btn btn-sm btn-outline-danger" onclick="openDeleteCategoryModal(@item.CategoryId, '@item.CategoryName')" title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ================= POPUP DIALOG: TẠO MỚI DANH MỤC ================= -->
+<div class="modal fade" id="createCategoryModal" tabindex="-1" aria-labelledby="createCatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold" id="createCatModalLabel"><i class="bi bi-folder-plus text-primary me-2"></i>Tạo danh mục mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên danh mục <span class="text-danger">*</span></label>
+                        <input name="CategoryName" class="form-control" placeholder="Tên danh mục..." required maxlength="100" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mô tả <span class="text-danger">*</span></label>
+                        <textarea name="CategoryDesciption" class="form-control" rows="3" placeholder="Mô tả chi tiết..." required maxlength="250"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Danh mục cha</label>
+                        <select name="ParentCategoryId" class="form-select">
+                            <option value="">-- Không có (Danh mục gốc) --</option>
+                            @foreach (var c in Model)
+                            {
+                                <option value="@c.CategoryId">@c.CategoryName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" name="IsActive" value="true" checked id="createCatActive" />
+                        <label class="form-check-label fw-semibold" for="createCatActive">Kích hoạt (Active)</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Lưu danh mục</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ================= POPUP DIALOG: CẬP NHẬT DANH MỤC ================= -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="editCategoryForm" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold" id="editCatModalLabel"><i class="bi bi-pencil-square text-primary me-2"></i>Cập nhật danh mục</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="editCatId" name="CategoryId" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên danh mục <span class="text-danger">*</span></label>
+                        <input id="editCatName" name="CategoryName" class="form-control" required maxlength="100" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mô tả <span class="text-danger">*</span></label>
+                        <textarea id="editCatDesc" name="CategoryDesciption" class="form-control" rows="3" required maxlength="250"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Danh mục cha</label>
+                        <select id="editCatParentId" name="ParentCategoryId" class="form-select">
+                            <option value="">-- Không có (Danh mục gốc) --</option>
+                            @foreach (var c in Model)
+                            {
+                                <option value="@c.CategoryId">@c.CategoryName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" name="IsActive" value="true" id="editCatActive" />
+                        <label class="form-check-label fw-semibold" for="editCatActive">Kích hoạt (Active)</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Cập nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ================= POPUP DIALOG: XÁC NHẬN XÓA DANH MỤC ================= -->
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="deleteCategoryForm" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold text-danger" id="deleteCatModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa danh mục</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <p class="fs-5 mb-2">Bạn có chắc chắn muốn xóa danh mục này?</p>
+                    <div class="alert alert-light border fw-semibold text-danger" id="deleteCategoryName"></div>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-info-circle me-1"></i> Lưu ý: Danh mục đang có bài viết thuộc về sẽ không được phép xóa!
+                    </p>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i> Xác nhận Xóa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditCategoryModal(catId) {
+            fetch(`/Categories/Get?id=${catId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error("Không thể tải thông tin danh mục");
+                    return res.json();
+                })
+                .then(cat => {
+                    $('#editCatId').val(cat.categoryId);
+                    $('#editCatName').val(cat.categoryName);
+                    $('#editCatDesc').val(cat.categoryDesciption);
+                    $('#editCatParentId').val(cat.parentCategoryId || '');
+                    $('#editCatActive').prop('checked', cat.isActive === true);
+
+                    $('#editCategoryForm').attr('action', `/Categories/Edit?id=${cat.categoryId}`);
+
+                    const modal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
+                    modal.show();
+                })
+                .catch(err => {
+                    alert("Lỗi: " + err);
+                });
+        }
+
+        function openDeleteCategoryModal(catId, catName) {
+            $('#deleteCategoryName').text(`${catName} (ID: ${catId})`);
+            $('#deleteCategoryForm').attr('action', `/Categories/Delete?id=${catId}`);
+            const modal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
+            modal.show();
+        }
+    </script>
+}

@@ -1,0 +1,143 @@
+@model _13_DangHoangSon_Assignment01_FontEnd.Models.ReportSearchViewModel
+@{
+    ViewData["Title"] = "Báo cáo Thống kê";
+    var total = Model.Articles.Count;
+    var activeCount = Model.Articles.Count(a => a.NewsStatus == true);
+    var inactiveCount = Model.Articles.Count(a => a.NewsStatus != true);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-bar-chart-line text-primary me-2"></i>Báo cáo Thống kê Tin tức</h3>
+        <p class="text-muted small mb-0">Thống kê bài viết theo khoảng thời gian từ ngày bắt đầu đến ngày kết thúc (Dành cho Admin)</p>
+    </div>
+</div>
+
+<!-- Bộ lọc khoảng thời gian -->
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label asp-for="StartDate" class="form-label fw-semibold"></label>
+                <input asp-for="StartDate" class="form-control" type="date" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="EndDate" class="form-label fw-semibold"></label>
+                <input asp-for="EndDate" class="form-control" type="date" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">
+                    <i class="bi bi-filter me-1"></i> Xuất Báo cáo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Thống kê tổng hợp -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-primary bg-opacity-10 text-primary p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-uppercase mb-1 fw-bold small">Tổng số bài viết</h6>
+                    <h2 class="fw-bold mb-0">@total</h2>
+                </div>
+                <i class="bi bi-journal-check fs-1 text-primary"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-success bg-opacity-10 text-success p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-uppercase mb-1 fw-bold small">Đã kích hoạt (Active)</h6>
+                    <h2 class="fw-bold mb-0">@activeCount</h2>
+                </div>
+                <i class="bi bi-check-circle fs-1 text-success"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-secondary bg-opacity-10 text-secondary p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-uppercase mb-1 fw-bold small">Chưa kích hoạt (Inactive)</h6>
+                    <h2 class="fw-bold mb-0">@inactiveCount</h2>
+                </div>
+                <i class="bi bi-dash-circle fs-1 text-secondary"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng chi tiết kết quả thống kê -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <span class="fw-bold text-dark">
+            <i class="bi bi-table me-2"></i>Kết quả thống kê từ @Model.StartDate.ToString("dd/MM/yyyy") đến @Model.EndDate.ToString("dd/MM/yyyy")
+        </span>
+        <span class="badge bg-secondary">Sắp xếp giảm dần theo ngày tạo</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 100px;">Mã</th>
+                        <th>Tiêu đề & Tóm tắt</th>
+                        <th>Danh mục</th>
+                        <th>Người tạo</th>
+                        <th>Ngày tạo</th>
+                        <th>Trạng thái</th>
+                        <th>Nguồn tin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Articles.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                                Không có bài viết nào được khởi tạo trong khoảng thời gian này.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var a in Model.Articles)
+                        {
+                            <tr>
+                                <td class="fw-semibold text-secondary">@a.NewsArticleId</td>
+                                <td>
+                                    <div class="fw-bold text-dark">@(a.NewsTitle ?? a.Headline)</div>
+                                    <small class="text-muted">@a.Headline</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info bg-opacity-10 text-dark">
+                                        @(a.Category?.CategoryName ?? "N/A")
+                                    </span>
+                                </td>
+                                <td>@(a.CreatedBy?.AccountName ?? "N/A")</td>
+                                <td class="small fw-semibold text-primary">
+                                    <i class="bi bi-calendar-event me-1"></i>@(a.CreatedDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")
+                                </td>
+                                <td>
+                                    @if (a.NewsStatus == true)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td class="small text-muted">@(a.NewsSource ?? "N/A")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
